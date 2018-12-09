@@ -58,12 +58,28 @@ mod json {
     }
 }
 
+pub enum RustEdition {
+    Rust2015,
+    Rust2018,
+    Unknown
+}
+
+impl ::std::convert::From<Option<&str>> for RustEdition {
+    fn from(str: Option<&str>) -> RustEdition {
+        match str {
+            None | Some("2015") => RustEdition::Rust2015,
+            Some("2018") => RustEdition::Rust2018,
+            _ => RustEdition::Unknown,
+        }
+    }
+}
+
 pub struct Config {
     pub config_file: PathBuf,
     pub cpp_file: PathBuf,
     pub objects: BTreeMap<String, Rc<Object>>,
     pub rust: Rust,
-    pub rust_edition: Option<String>,
+    pub rust_edition: RustEdition,
     pub overwrite_implementation: bool,
 }
 
@@ -450,12 +466,12 @@ fn post_process(config_file: &Path, json: json::Config) -> Result<Config, Box<Er
         post_process_object(object, &mut objects, &json.objects)?;
     }
 
-    let rust_edition: Option<String> = {
+    let rust_edition: RustEdition = {
         let mut buf = config_file.to_path_buf();
         buf.pop();
         buf.push("Cargo.toml");
         let manifest: toml::Value = fs::read_to_string(&buf)?.parse()?;
-        manifest["package"].get("edition").map(|s| s.as_str().unwrap().into())
+        manifest["package"].get("edition").and_then(|val| val.as_str()).into()
     };
 
     Ok(Config {

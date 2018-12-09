@@ -1538,8 +1538,8 @@ use {}{}::*;
 /// Prior to the 2018 edition, crate-local modules could be imported without
 /// this prefix.
 fn get_module_prefix(conf: &Config) -> &'static str {
-    match conf.rust_edition.as_ref() {
-        Some(value) if value.as_str() == "2018" => "crate::",
+    match conf.rust_edition {
+        RustEdition::Rust2018 => "crate::",
         _ => ""
     }
 }
