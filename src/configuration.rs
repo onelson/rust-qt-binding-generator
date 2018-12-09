@@ -1,5 +1,6 @@
 use configuration_private::*;
 use serde_json;
+use toml;
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fs;
@@ -62,6 +63,7 @@ pub struct Config {
     pub cpp_file: PathBuf,
     pub objects: BTreeMap<String, Rc<Object>>,
     pub rust: Rust,
+    pub rust_edition: Option<String>,
     pub overwrite_implementation: bool,
 }
 
@@ -447,11 +449,21 @@ fn post_process(config_file: &Path, json: json::Config) -> Result<Config, Box<Er
     for object in &json.objects {
         post_process_object(object, &mut objects, &json.objects)?;
     }
+
+    let rust_edition: Option<String> = {
+        let mut buf = config_file.to_path_buf();
+        buf.pop();
+        buf.push("Cargo.toml");
+        let manifest: toml::Value = fs::read_to_string(&buf)?.parse()?;
+        manifest["package"].get("edition").map(|s| s.as_str().unwrap().into())
+    };
+
     Ok(Config {
         config_file: config_file.into(),
         cpp_file: json.cpp_file,
         objects,
         rust: json.rust,
+        rust_edition,
         overwrite_implementation: json.overwrite_implementation,
     })
 }
